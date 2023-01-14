@@ -1,11 +1,19 @@
-import { Welcome } from '../components/Welcome/Welcome';
-import { ColorSchemeToggle } from '../components/ColorSchemeToggle/ColorSchemeToggle';
 import { PreviewSuspense } from 'next-sanity/preview';
 import { lazy } from 'react';
-import { DocumentsCount, query } from 'components/DocumentsCount';
-import { client } from 'lib/sanity.client';
+import { groq } from 'next-sanity';
+import { client } from '../lib/sanity.client';
+import { ColorSchemeToggle } from '../components/ColorSchemeToggle/ColorSchemeToggle';
+import BlogList from '../components/BlogList/BlogList';
 
-const PreviewDocumentsCount = lazy(() => import('components/PreviewDocumentsCount'));
+const PreviewBlogList = lazy(() => import('../components/BlogList/PreviewBlogList'));
+
+const query = groq`
+  *[_type=='post']{
+    ...,
+    author->,
+    categories[]->
+  } | order(_createdAt desc)
+`;
 
 export const getStaticProps = async ({ preview = false }) => {
   if (preview) {
@@ -17,12 +25,18 @@ export const getStaticProps = async ({ preview = false }) => {
   return { props: { preview, data } };
 };
 
+export default function HomePage({ preview, data }: { preview: boolean, data: any }) {
+  if (preview) {
+    return (
+      <PreviewSuspense fallback="Loading...">
+        <PreviewBlogList query={query} />
+      </PreviewSuspense>
+    );
+  }
 
-export default function HomePage() {
   return (
-    <>
-      <Welcome />
-      <ColorSchemeToggle />
-    </>
+  <>
+  <BlogList posts={data} />
+  </>
   );
 }
